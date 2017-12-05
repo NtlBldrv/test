@@ -20,7 +20,7 @@ class CreateBaseEntities extends Migration
             $table->bigInteger('game_id')->unsigned();
             $table->integer('service_id')->unsigned();
             $table->bigInteger('viewer_count');
-            $table->boolean('active')->default(false);
+            $table->boolean('live')->default(false);
             $table->unique(['stream_id', 'service_id']);
             $table->timestamps();
         });
@@ -28,6 +28,7 @@ class CreateBaseEntities extends Migration
         Schema::create('games', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('name')->unique();
+            $table->bigInteger('twitch_game_id')->unique();
         });
 
         Schema::create('streaming_services', function (Blueprint $table) {

@@ -2,20 +2,21 @@
 
 namespace App\Services;
 
+use App\API\Exceptions\UnsuccessfulResponseException;
+use App\API\TwitchApi;
 use App\Game;
 use App\Stream;
 use App\StreamingService;
 use Psr\Log\InvalidArgumentException;
-use TwitchApi\TwitchApi;
 
 class TwitchAdapter implements StreamingServiceAdapterInterface
 {
-    const STREAMS_LIMIT = 100;
-    const TWITCH        = 'Twitch';
-    const STREAM_TYPE   = 'live';
+    const TWITCH = 'Twitch';
 
     /** @var TwitchApi */
     private $twitchClient;
+    /** @var string */
+    private $cursor;
 
     public function __construct(TwitchApi $twitchClient)
     {
@@ -26,6 +27,11 @@ class TwitchAdapter implements StreamingServiceAdapterInterface
     public function updateStreams()
     {
         $games   = Game::all();
+
+        if (empty($games)) {
+            throw new \Exception('No games were found for update');
+        }
+
         $service = StreamingService::query()->where('title', '=', self::TWITCH)->get()->first();
 
         if (!$service) {
@@ -35,83 +41,115 @@ class TwitchAdapter implements StreamingServiceAdapterInterface
         /** @var Stream[] $existingStreams */
         $existingStreams = Stream::query()->where('service_id', '=', $service->id)->get();
 
-        $streams = [];
+        $gameIds = [];
         foreach ($games as $game) {
-            $streams[$game->name] = $this->twitchClient->getLiveStreams(
-                null,
-                $game->name,
-                null,
-                self::STREAM_TYPE,
-                self::STREAMS_LIMIT
-            );
+            $gameIds[] = $game->twitch_game_id;
         }
 
-        if (!empty($streams)) {
-            /** @var array $streams */
-            foreach ($streams as $gameName => $apiResponse) {
-                if (!isset($apiResponse['streams'])) {
-                    throw new \OutOfRangeException('Check API response');
-                }
+        do {
+            $streams = $this->getLiveStreams($gameIds);
 
-                $gameStreams = $apiResponse['streams'];
-                $game        = Game::query()->where('name', '=', $gameName)->get()->first();
+            if (!empty($streams)) {
                 if (!empty($existingStreams)) {
-                    $newStreams = $this->updateExistingStreams($existingStreams, $game, $gameStreams);
+                    $newStreams = $this->updateExistingStreams($existingStreams, $streams);
                 }
 
                 if (!empty($newStreams)) {
-                    $this->inputStreamsIntoDB($game, $service, $newStreams);
+                    $this->inputStreamsIntoDB($service, $newStreams);
                 }
             }
-        }
+        } while ($this->cursor !== null);
+    }
+
+    private function getLiveStreams(array $gameIds)
+    {
+        $response = $this->twitchClient->getLiveStreams($gameIds, $this->cursor);
+        var_export($response);
+        $this->cursor = $response->getCursor();
+
+        return $response->getStreams();
     }
 
     /**
      * @param Stream[] $existingStreams
-     * @param Game     $game
      * @param array    $gameStreams
      *
      * @return array
      */
-    private function updateExistingStreams($existingStreams, Game $game, array $gameStreams)
+    private function updateExistingStreams($existingStreams, array $gameStreams): array
     {
-        foreach ($existingStreams as $keyStream => $existingStream) {
-            if ($game->id === $existingStream->game_id) {
-                $existingStream->active = false;
-                foreach ($gameStreams as $key => $stream) {
-                    $this->checkStreamStructure($stream);
-                    if ($stream['_id'] === $existingStream->stream_id) {
-                        $existingStream->viewer_count = $stream['viewers'];
-                        $existingStream->active       = true;
-                        unset($gameStreams[$key]);
-                        continue;
+        foreach ($existingStreams as $existingStream) {
+            $existingStream->live = false;
+            foreach ($gameStreams as $key => $stream) {
+                if ($this->getStreamId($stream) === 26902093072 ||
+                    $existingStream->stream_id === 26902093072) {
+                    var_export([$this->getStreamId($stream) === $existingStream->stream_id, $this->getStreamId($stream), $existingStream->stream_id]);
                     }
+                if ($this->getStreamId($stream) === $existingStream->stream_id) {
+                    $existingStream->viewer_count = $this->getViewerCount($stream);
+                    $existingStream->live         = true;
+                    unset($gameStreams[$key]);
+                    continue;
                 }
             }
+
             $existingStream->save();
         }
+
         return $gameStreams;
     }
 
-    private function inputStreamsIntoDB(Game $game, StreamingService $service, array $gameStreams)
+    /**
+     * @param StreamingService $service
+     * @param array            $gameStreams
+     */
+    private function inputStreamsIntoDB(StreamingService $service, array $gameStreams)
     {
         foreach ($gameStreams as $key => $stream) {
-            $this->checkStreamStructure($stream);
+            $game = Game::query()->where('twitch_game_id', '=', $this->getGameId($stream))->get()->first();
             $newStream               = new Stream();
-            $newStream->channel_id   = $stream['channel']['_id'];
-            $newStream->stream_id    = $stream['_id'];
+            $newStream->channel_id   = $this->getChannelId($stream);
+            $newStream->stream_id    = $this->getStreamId($stream);
             $newStream->game_id      = $game->id;
             $newStream->service_id   = $service->id;
-            $newStream->viewer_count = $stream['viewers'];
-            $newStream->active       = true;
+            $newStream->viewer_count = $this->getViewerCount($stream);
+            $newStream->live         = true;
             $newStream->save();
         }
     }
-
-    private function checkStreamStructure(array $stream)
+    public function getViewerCount(array $stream): int
     {
-        if (!isset($stream['channel']['_id'], $stream['_id'], $stream['viewers'])) {
-            throw new \OutOfRangeException('Check API response');
+        if (!isset($stream['viewer_count'])) {
+            throw new UnsuccessfulResponseException('Stream does not contain field \'viewer_count\'');
         }
+
+        return (int)$stream['viewer_count'];
+    }
+
+    public function getChannelId(array $stream): int
+    {
+        if (!isset($stream['user_id'])) {
+            throw new UnsuccessfulResponseException('Stream does not contain field \'user_id\'');
+        }
+
+        return (int)$stream['user_id'];
+    }
+
+    public function getStreamId(array $stream): int
+    {
+        if (!isset($stream['id'])) {
+            throw new UnsuccessfulResponseException('Stream does not contain field \'id\'');
+        }
+
+        return (int)$stream['id'];
+    }
+
+    public function getGameId(array $stream): int
+    {
+        if (!isset($stream['game_id'])) {
+            throw new UnsuccessfulResponseException('Stream does not contain field \'game_id\'');
+        }
+
+        return (int)$stream['game_id'];
     }
 }

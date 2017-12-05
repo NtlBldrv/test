@@ -2,11 +2,10 @@
 
 namespace App\Providers;
 
+use App\API\TwitchApi;
 use App\Services\TwitchAdapter;
 use App\Registry\StreamingServiceRegistry;
-use App\StreamingService;
 use Illuminate\Support\ServiceProvider;
-use TwitchApi\TwitchApi;
 
 class AppServiceProvider extends ServiceProvider
 {

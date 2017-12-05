@@ -89,12 +89,12 @@ class StreamController extends Controller
             $query->whereIn('game_id', $gameIds);
         }
 
-        if ($activeParam = $request->query('active')) {
+        if ($activeParam = $request->query('live')) {
             if (!is_string($activeParam)) {
-                throw new InvalidTypeException('active', 'string', gettype($activeParam));
+                throw new InvalidTypeException('live', 'string', gettype($activeParam));
             }
 
-            $query->where('active', $activeParam);
+            $query->where('live', $activeParam);
         }
 
         if ($datetimeFromParam = $request->query('datetimefrom')) {
