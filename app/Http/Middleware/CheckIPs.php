@@ -9,6 +9,13 @@ use Symfony\Component\HttpFoundation\IpUtils;
 
 class CheckIPs
 {
+    /**
+     * @param Request $request
+     * @param Closure $next
+     *
+     * @return mixed
+     * @throws UnauthorizedException
+     */
     public function handle(Request $request, Closure $next)
     {
         foreach ($request->getClientIps() as $ip) {
@@ -24,7 +31,7 @@ class CheckIPs
         return in_array($ip, config('app.valid_ips'));
     }
 
-    private function isValidIpRange(string $ip):bool
+    private function isValidIpRange(string $ip): bool
     {
         return IpUtils::checkIp($ip, config('app.valid_ip_range'));
     }

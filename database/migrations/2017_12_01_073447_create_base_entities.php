@@ -14,14 +14,14 @@ class CreateBaseEntities extends Migration
     public function up()
     {
         Schema::create('streams', function (Blueprint $table) {
-            $table->increments('id');
+            $table->bigIncrements('id');
             $table->bigInteger('channel_id');
             $table->bigInteger('stream_id');
             $table->bigInteger('game_id')->unsigned();
             $table->integer('service_id')->unsigned();
             $table->bigInteger('viewer_count');
             $table->boolean('active')->default(false);
-            $table->unique(['stream_id', 'service_id']);
+            $table->unique(['stream_id', 'game_id']);
             $table->timestamps();
         });
 
