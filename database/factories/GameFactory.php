@@ -1,7 +1,8 @@
 <?php
+use Faker\Generator as Faker;
 
-$factory->define(App\Game::class, function () {
+$factory->define(App\Game::class, function (Faker $faker) {
     return [
-        'name' => 'Overwatch',
+        'name' => $faker->name,
     ];
 });

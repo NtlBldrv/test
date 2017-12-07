@@ -14,4 +14,3 @@ Route::middleware('check_ips')->group(function () {
          ->middleware('auth:api');
     Route::post('register/', 'Auth\RegisterController@register');
 });
-

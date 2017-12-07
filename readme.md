@@ -56,7 +56,7 @@ the query live=0 would return only offline streams)
 
 ```php
 GET /api/viewer_count_history/ - returns the number of viewers for a period of time for all streams 
-that exist in the DB, if sum_up filter is not passed then a list of all streams qould be returned
+that exist in the DB, if sum_up filter is not passed then a list of all streams would be returned
 ```
 
 Available filters:
@@ -65,4 +65,4 @@ Available filters:
 * datetimefrom - only streams that were updated from the specified date to today would be returned (works like equals or greater)
 * datetimeto - only streams that were updated prior to the specified date would be returned (works like equals or less)
 * sum_up=1 - would return a total of viewers for all time or a specified period of time, if the filter game_ids is given then it would also
-return a coun by game
+return viewer count by game

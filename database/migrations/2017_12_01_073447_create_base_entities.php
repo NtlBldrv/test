@@ -20,7 +20,7 @@ class CreateBaseEntities extends Migration
             $table->bigInteger('game_id')->unsigned();
             $table->integer('service_id')->unsigned();
             $table->bigInteger('viewer_count');
-            $table->boolean('active')->default(false);
+            $table->boolean('live')->default(false);
             $table->unique(['stream_id', 'game_id']);
             $table->timestamps();
         });

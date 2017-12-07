@@ -39,7 +39,7 @@ class Handler extends ExceptionHandler
     /** {@inheritdoc} */
     protected function unauthenticated($request, AuthenticationException $exception)
     {
-        return new JsonResponse(['error' => 'Unauthenticated'], Response::HTTP_UNAUTHORIZED);
+        return new JsonResponse(['error' => 'Unauthenticated', $exception->getTraceAsString()], Response::HTTP_UNAUTHORIZED);
     }
 
     /** {@inheritdoc} */

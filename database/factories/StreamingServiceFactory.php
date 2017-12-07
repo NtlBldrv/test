@@ -1,7 +1,9 @@
 <?php
 
-$factory->define(App\StreamingService::class, function () {
+use Faker\Generator as Faker;
+
+$factory->define(App\StreamingService::class, function (Faker $faker) {
     return [
-        'title' => 'Twitch',
+        'title' => $faker->title,
     ];
 });

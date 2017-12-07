@@ -19,6 +19,11 @@ class StreamController extends Controller
 {
     const PER_PAGE         = 25;
     const DATE_TIME_FORMAT = 'Y-m-d H:i:s';
+    const GAME_IDS         = 'game_ids';
+    const DATETIME_FROM    = 'datetimeFrom';
+    const DATETIME_TO      = 'datetimeTo';
+    const LIVE             = 'live';
+    const SUM_UP           = 'sum_up';
 
     /**
      * @param Request $request
@@ -77,9 +82,9 @@ class StreamController extends Controller
         try {
             $query            = ViewerCountHistory::query();
             $updateColumnName = 'updated_at';
-            if ($gameIds = $request->query('game_ids')) {
+            if ($gameIds = $request->query(self::GAME_IDS)) {
                 if (!is_string($gameIds)) {
-                    throw new InvalidTypeException('gameIds', 'string', gettype($gameIds));
+                    throw new InvalidTypeException(self::GAME_IDS, 'string', gettype($gameIds));
                 }
 
                 $gameIds = explode(',', $gameIds);
@@ -94,7 +99,7 @@ class StreamController extends Controller
                         throw new InvalidArgumentException(sprintf('No game was found with id %s', $gameId));
                     }
 
-                    if ($request->query('sum_up')) {
+                    if ($request->query(self::SUM_UP)) {
                         $games[] = $game;
                     }
                 }
@@ -109,11 +114,11 @@ class StreamController extends Controller
 
             $viewerCount = $query->paginate(self::PER_PAGE);
 
-            if ($sumUpParam = $request->query('sum_up')) {
+            if ($sumUpParam = $request->query(self::SUM_UP)) {
                 $viewerCount = [];
                 $countAll    = 0;
                 if (!is_numeric($sumUpParam)) {
-                    throw new InvalidTypeException('sum_up', 'integer', gettype($sumUpParam));
+                    throw new InvalidTypeException(self::SUM_UP, 'integer', gettype($sumUpParam));
                 }
 
                 $allHistoryItems = $sumQuery->get();
@@ -175,9 +180,9 @@ class StreamController extends Controller
      */
     private function fillLiveCondition(Request $request, Builder $query)
     {
-        if ($activeParam = $request->query('live')) {
+        if ($activeParam = $request->query(self::LIVE)) {
             if (!is_string($activeParam)) {
-                throw new InvalidTypeException('live', 'string', gettype($activeParam));
+                throw new InvalidTypeException(self::LIVE, 'string', gettype($activeParam));
             }
 
             $query->where('live', $activeParam);
@@ -187,9 +192,9 @@ class StreamController extends Controller
     private function fillGameCondition(Request $request, Builder $query, $saveFoundGames = true)
     {
         $games = [];
-        if ($gameIds = $request->query('game_ids')) {
+        if ($gameIds = $request->query(self::GAME_IDS)) {
             if (!is_string($gameIds)) {
-                throw new InvalidTypeException('gameIds', 'string', gettype($gameIds));
+                throw new InvalidTypeException(self::GAME_IDS, 'string', gettype($gameIds));
             }
 
             $gameIds = explode(',', $gameIds);
@@ -214,18 +219,18 @@ class StreamController extends Controller
 
     private function fillTimeConditions(Request $request, Builder $query, $columnName = 'updated_at')
     {
-        if ($datetimeFromParam = $request->query('datetimefrom')) {
+        if ($datetimeFromParam = $request->query(self::DATETIME_FROM)) {
             if (!is_string($datetimeFromParam)) {
-                throw new InvalidTypeException('datetimeFrom', 'string', gettype($datetimeFromParam));
+                throw new InvalidTypeException(self::DATETIME_FROM, 'string', gettype($datetimeFromParam));
             }
 
             $datetimeFrom = (new \DateTime($datetimeFromParam))->format(self::DATE_TIME_FORMAT);
             $query->whereDate($columnName, '>=', $datetimeFrom);
         }
 
-        if ($datetimeToParam = $request->query('datetimeto')) {
+        if ($datetimeToParam = $request->query(self::DATETIME_TO)) {
             if (!is_string($datetimeToParam)) {
-                throw new InvalidTypeException('datetimeTo', 'string', gettype($datetimeToParam));
+                throw new InvalidTypeException(self::DATETIME_TO, 'string', gettype($datetimeToParam));
             }
 
             $datetimeTo = (new \DateTime($datetimeToParam))->format(self::DATE_TIME_FORMAT);

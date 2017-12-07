@@ -39,7 +39,6 @@ class TwitchAdapter implements StreamingServiceAdapterInterface
             $offset                = 0;
             $this->existingStreams = [];
 
-            /* This query looks wrong and I know about it. Do I know what to do with it? Nope. Any suggestions? */
             $query = Stream::query()->where('service_id', '=', $service->id)
                                     ->where('game_id', '=', $game->id);
             $query->update(

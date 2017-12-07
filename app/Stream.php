@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Stream extends Model
 {
-    protected $fillable = ['channel_id', 'stream_id', 'viewer_count', 'active'];
+    protected $fillable = ['channel_id', 'stream_id', 'viewer_count', 'live'];
 
     public function game()
     {

@@ -3,16 +3,13 @@
 use Faker\Generator as Faker;
 
 $factory->define(App\Stream::class, function (Faker $faker) {
+
     return [
-        'channel_id'   => $faker->channel_id->unique(),
-        'stream_id'    => $faker->stream_id->unique(),
-        'viewer_count' => $faker->viewer_count,
-        'active'       => true,
-        'game_id'      => function () {
-            return factory(\App\Game::class)->create()->id;
-        },
-        'service_id'   => function () {
-            return factory(\App\StreamingService::class)->create()->id;
-        },
+        'channel_id'   => 1,
+        'stream_id'    => random_int(111111, 99999999),
+        'viewer_count' => random_int(0, 999999),
+        'live'         => true,
+        'game_id'      => 1,
+        'service_id'   => 1,
     ];
 });
